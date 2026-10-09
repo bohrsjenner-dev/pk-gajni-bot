@@ -1,0 +1,20 @@
+
+{
+  "id": "./",
+  "name": "Pk Gajni Bot",
+  "short_name": "Gajni Bot",
+  "description": "A friendly AI chatbot",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#10111b",
+  "theme_color": "#10111b",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
