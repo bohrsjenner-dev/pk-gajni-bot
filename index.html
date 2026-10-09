@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#10111b">
 <title>Pk Gajni Bot</title>
 <link rel="manifest" href="./manifest.json">
+
 <style>
 :root{color-scheme:dark;--bg:#10111b;--panel:#1b1d2b;--accent:#8b5cf6;--text:#f8f7ff}
 *{box-sizing:border-box}
@@ -16,6 +17,7 @@ header{padding:18px;background:var(--panel);display:flex;align-items:center;just
 .brand{font-size:20px;font-weight:800}
 .sub{font-size:12px;color:#b6b7ce;margin-top:5px}
 button{cursor:pointer;border:0;border-radius:12px;padding:12px;color:white;background:var(--accent);font-weight:bold}
+button:disabled{opacity:.55;cursor:wait}
 #settings{background:#34364a}
 #chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .msg{padding:12px 14px;border-radius:16px;max-width:88%;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
@@ -31,28 +33,37 @@ button{cursor:pointer;border:0;border-radius:12px;padding:12px;color:white;backg
 .small{font-size:12px;color:#c3c4d7;line-height:1.5}
 </style>
 </head>
+
 <body>
 <div class="app">
 <header>
   <div>
     <div class="brand">🤖 Pk Gajni Bot</div>
-    <div class="sub">Tumhara AI dost</div>
+    <div class="sub">Tumhara AI dost • Live Search</div>
   </div>
   <button id="settings">⚙ Settings</button>
 </header>
 
 <section id="setup" class="hidden">
   <b>AI Settings</b>
-  <p class="small">Google AI Studio se apni API key lo. Is personal browser par key save hogi. Is app ko public share mat karna jab tak secure backend na ho.</p>
+  <p class="small">
+    Google AI Studio se Gemini API key lo.
+    Ye key is browser mein save hogi. Public app ke liye
+    secure backend use karna chahiye.
+  </p>
   <input id="apiKey" type="password" placeholder="Paste your Gemini API key">
   <button id="saveKey">Save key</button>
   <button id="hideSettings" style="background:#34364a">Close</button>
 </section>
 
 <main id="chat" aria-live="polite">
-  <div class="msg bot">Assalam-o-Alaikum Boss! 😎 Main Pk Gajni Bot hoon. Mujhse kuch bhi poochho!</div>
+  <div class="msg bot">
+    Assalam-o-Alaikum Boss! 😎 Main Pk Gajni Bot hoon.
+    Ab mujhse latest information, weather aur news bhi poochho!
+  </div>
 </main>
-<div id="status">AI connect karne ke liye Settings mein API key save karo.</div>
+
+<div id="status">Settings mein apni Gemini API key save karo.</div>
 
 <form class="composer" id="form">
   <input id="message" placeholder="Apna message likho..." autocomplete="off" required>
@@ -67,7 +78,10 @@ let history = [];
 
 try {
   history = JSON.parse(localStorage.getItem("gajniHistory") || "[]");
-} catch { history = []; }
+  if (!Array.isArray(history)) history = [];
+} catch {
+  history = [];
+}
 
 function addMessage(text, who, save = true) {
   const el = document.createElement("div");
@@ -79,36 +93,51 @@ function addMessage(text, who, save = true) {
   if (save) {
     history.push({ text, who });
     history = history.slice(-60);
-    localStorage.setItem("gajniHistory", JSON.stringify(history));
+    try {
+      localStorage.setItem("gajniHistory", JSON.stringify(history));
+    } catch {}
   }
   return el;
 }
 
-for (const m of history) addMessage(m.text, m.who, false);
+for (const m of history) {
+  if (m && typeof m.text === "string" &&
+      (m.who === "user" || m.who === "bot")) {
+    addMessage(m.text, m.who, false);
+  }
+}
 
 $("apiKey").value = localStorage.getItem("gajniApiKey") || "";
-$("settings").onclick = () => $("setup").classList.toggle("hidden");
-$("hideSettings").onclick = () => $("setup").classList.add("hidden");
+
+$("settings").onclick = () =>
+  $("setup").classList.toggle("hidden");
+
+$("hideSettings").onclick = () =>
+  $("setup").classList.add("hidden");
 
 $("saveKey").onclick = () => {
   const key = $("apiKey").value.trim();
+
   if (!key) {
     $("status").textContent = "Pehle API key paste karo.";
     return;
   }
+
   localStorage.setItem("gajniApiKey", key);
   $("setup").classList.add("hidden");
-  $("status").textContent = "API key is browser mein save ho gayi.";
+  $("status").textContent = "API key save ho gayi.";
 };
 
 $("form").addEventListener("submit", async event => {
   event.preventDefault();
+
   const text = $("message").value.trim();
   const key = localStorage.getItem("gajniApiKey");
 
   if (!text) return;
+
   if (!key) {
-    $("status").textContent = "Settings kholo aur pehle API key save karo.";
+    $("status").textContent = "Settings kholo aur API key save karo.";
     $("setup").classList.remove("hidden");
     return;
   }
@@ -116,7 +145,7 @@ $("form").addEventListener("submit", async event => {
   addMessage(text, "user");
   $("message").value = "";
   $("send").disabled = true;
-  $("status").textContent = "Gajni soch raha hai... 🤔";
+  $("status").textContent = "Gajni jawab dhoond raha hai... 🔎";
 
   try {
     const contents = history
@@ -128,7 +157,7 @@ $("form").addEventListener("submit", async event => {
       }));
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
       {
         method: "POST",
         headers: {
@@ -138,33 +167,83 @@ $("form").addEventListener("submit", async event => {
         body: JSON.stringify({
           systemInstruction: {
             parts: [{
-              text: "You are Pk Gajni Bot, a friendly, funny and helpful AI assistant. Reply in the same language as the user, including Roman Urdu when appropriate. Be respectful and clear."
+              text:
+                "You are Pk Gajni Bot, a friendly, funny and helpful AI assistant. " +
+                "Reply in the same language as the user, including Roman Urdu when appropriate. " +
+                "For current events, latest news, live weather, current prices, recent facts, " +
+                "or anything that may have changed, use Google Search grounding. " +
+                "Do not pretend to have searched if you did not. " +
+                "Clearly mention uncertainty when reliable current information is unavailable. " +
+                "Be respectful and clear."
             }]
           },
-contents,
+          contents,
+          tools: [{ google_search: {} }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1000
+          }
         })
       }
     );
 
     const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(data.error?.message || "API request failed.");
+      const message = data.error?.message || "API request failed.";
+      const err = new Error(message);
+      err.status = response.status;
+      throw err;
     }
 
-    const answer = data.candidates?.[0]?.content?.parts
+    const candidate = data.candidates?.[0];
+
+    const answer = candidate?.content?.parts
       ?.map(p => p.text || "")
       .join("")
       .trim();
 
-    const sources = data.candidates?.[0]?.groundingMetadata?.groundingChunks   ?.filter(item => item.web?.uri)   ?.map(item => `• ${item.web.title || "Web source"}: ${item.web.uri}`);  const finalAnswer = answer   ? answer + (sources?.length       ? "
+    if (!answer) {
+      throw new Error("AI ne text jawab nahi diya. Dobara try karo.");
+    }
 
-🌐 Web sources:
-" + [...new Set(sources)].join("
-")       : "")   : "";  if (!finalAnswer) throw new Error("AI ne text jawab nahi diya.");
+    const chunks = candidate?.groundingMetadata?.groundingChunks || [];
+
+    const sources = chunks
+      .filter(item => item.web?.uri)
+      .map(item => ({
+        title: item.web.title || "Web source",
+        uri: item.web.uri
+      }));
+
+    const uniqueSources = [
+      ...new Map(sources.map(s => [s.uri, s])).values()
+    ];
+
+    const finalAnswer = answer + (
+      uniqueSources.length
+        ? "\n\n🌐 Web sources:\n" +
+          uniqueSources.map(s => `• ${s.title}: ${s.uri}`).join("\n")
+        : ""
+    );
+
     addMessage(finalAnswer, "bot");
-    $("status").textContent = "Online • Pk Gajni Bot";
+    $("status").textContent = uniqueSources.length
+      ? "Online • Web sources included"
+      : "Online • Pk Gajni Bot";
+
   } catch (error) {
-    $("status").textContent = "Masla: " + error.message;
+    console.error(error);
+
+    if (error.status === 429) {
+      $("status").textContent =
+        "Quota limit ya billing restriction. Google AI Studio mein model aur quota check karo.";
+    } else if (error.status === 400 || error.status === 404) {
+      $("status").textContent =
+        "Model ya request error. API key aur model access check karo.";
+    } else {
+      $("status").textContent = "Masla: " + error.message;
+    }
   } finally {
     $("send").disabled = false;
     $("message").focus();
