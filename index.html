@@ -141,8 +141,8 @@ $("form").addEventListener("submit", async event => {
               text: "You are Pk Gajni Bot, a friendly, funny and helpful AI assistant. Reply in the same language as the user, including Roman Urdu when appropriate. Be respectful and clear."
             }]
           },
-          contents,
-          generationConfig: { temperature: 0.8, maxOutputTokens: 800 }
+contents,
+tools: [{ google_search: {} }],
         })
       }
     );
