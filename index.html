@@ -157,8 +157,12 @@ tools: [{ google_search: {} }],
       .join("")
       .trim();
 
-    if (!answer) throw new Error("AI ne text jawab nahi diya.");
-    addMessage(answer, "bot");
+    const sources = data.candidates?.[0]?.groundingMetadata?.groundingChunks   ?.filter(item => item.web?.uri)   ?.map(item => `• ${item.web.title || "Web source"}: ${item.web.uri}`);  const finalAnswer = answer   ? answer + (sources?.length       ? "
+
+🌐 Web sources:
+" + [...new Set(sources)].join("
+")       : "")   : "";  if (!finalAnswer) throw new Error("AI ne text jawab nahi diya.");
+    addMessage(finalAnswer, "bot");
     $("status").textContent = "Online • Pk Gajni Bot";
   } catch (error) {
     $("status").textContent = "Masla: " + error.message;
