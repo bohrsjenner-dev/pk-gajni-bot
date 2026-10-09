@@ -190,7 +190,7 @@ $("form").addEventListener("submit", async event => {
     const data = await response.json();
 
     if (!response.ok) {
-      const message = data.error?.message || "API request failed.";
+      const message = JSON.stringify(data.error || data);
       const err = new Error(message);
       err.status = response.status;
       throw err;
