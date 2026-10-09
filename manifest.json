@@ -1,20 +1,18 @@
-
 {
-  "id": "./",
-  "name": "Pk Gajni Bot",
-  "short_name": "Gajni Bot",
-  "description": "A friendly AI chatbot",
-  "start_url": "./",
-  "scope": "./",
-  "display": "standalone",
-  "background_color": "#10111b",
-  "theme_color": "#10111b",
-  "icons": [
-    {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+"name": "Pk Gajni Chatbot",
+"short_name": "Gajni Bot",
+"description": "Your personal AI chatbot",
+"start_url": "./",
+"scope": "./",
+"display": "standalone",
+"background_color": "#0b0b0f",
+"theme_color": "#111111",
+"icons": [
+{
+"src": "./icon.svg",
+"sizes": "any",
+"type": "image/svg+xml",
+"purpose": "any"
+}
+]
 }
