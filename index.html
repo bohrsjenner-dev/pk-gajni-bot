@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,253 +6,317 @@
 <meta name="theme-color" content="#10111b">
 <title>Pk Gajni Bot</title>
 <link rel="manifest" href="./manifest.json">
-
 <style>
-:root{color-scheme:dark;--bg:#10111b;--panel:#1b1d2b;--accent:#8b5cf6;--text:#f8f7ff}
+:root{color-scheme:dark;--bg:#10111b;--panel:#1b1d2b;--accent:#8b5cf6;--text:#f8f7ff;--muted:#b6b7ce;--line:#303246}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
-.app{height:100dvh;max-width:760px;margin:auto;display:flex;flex-direction:column}
-header{padding:18px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #303246}
-.brand{font-size:20px;font-weight:800}
-.sub{font-size:12px;color:#b6b7ce;margin-top:5px}
-button{cursor:pointer;border:0;border-radius:12px;padding:12px;color:white;background:var(--accent);font-weight:bold}
+button{cursor:pointer;border:0;border-radius:11px;padding:11px 13px;color:white;background:var(--accent);font-weight:bold}
 button:disabled{opacity:.55;cursor:wait}
-#settings{background:#34364a}
-#chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.msg{padding:12px 14px;border-radius:16px;max-width:88%;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+button.secondary{background:#34364a}
+.app{height:100dvh;display:flex;max-width:1200px;margin:auto;overflow:hidden}
+.sidebar{width:260px;flex-shrink:0;background:#151622;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px;gap:10px}
+.sidebar-top{display:flex;gap:8px}
+.sidebar-top button{flex:1}
+#chatList{overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.chat-item{display:flex;gap:4px;align-items:center}
+.chat-open{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:transparent;font-weight:normal}
+.chat-open.active{background:#2a2440}
+.chat-delete{background:transparent;color:#c8c7d9;padding:8px}
+.sidebar-note{margin-top:auto;color:#9698b3;font-size:11px;line-height:1.45}
+.main{height:100%;min-width:0;flex:1;display:flex;flex-direction:column}
+header{padding:15px 18px;background:var(--panel);display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line)}
+.brand{font-size:20px;font-weight:800}
+.sub{font-size:12px;color:var(--muted);margin-top:5px}
+.header-actions{display:flex;gap:7px;align-items:center}
+#setup{padding:14px 18px;background:#202235;border-bottom:1px solid #41435b}
+#setup input{width:100%;padding:12px;margin:8px 0;background:var(--bg);color:white;border:1px solid #41435b;border-radius:10px}
+.small{font-size:12px;color:#c3c4d7;line-height:1.5}
+.hidden{display:none!important}
+#chat{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.msg{padding:12px 14px;border-radius:16px;max-width:min(88%,800px);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 .bot{background:var(--panel);align-self:flex-start}
 .user{background:var(--accent);align-self:flex-end}
-#status{padding:0 16px 8px;color:#b6b7ce;font-size:12px}
+#status{padding:0 18px 8px;color:var(--muted);font-size:12px}
 .composer{display:flex;gap:8px;padding:12px;background:var(--panel);padding-bottom:max(12px,env(safe-area-inset-bottom))}
-#message{min-width:0;flex:1;border:1px solid #41435b;background:#10111b;color:white;border-radius:12px;padding:14px;font-size:16px;outline:none}
-#send{min-width:72px}
-#setup{padding:16px;background:#202235;border-bottom:1px solid #41435b}
-#setup input{width:100%;padding:12px;margin:8px 0;background:#10111b;color:white;border:1px solid #41435b;border-radius:10px}
-.hidden{display:none}
-.small{font-size:12px;color:#c3c4d7;line-height:1.5}
+#message{min-width:0;flex:1;border:1px solid #41435b;background:var(--bg);color:white;border-radius:12px;padding:14px;font-size:16px;outline:none}
+#send{min-width:70px}
+#mic.listening{background:#dc3658}
+.voice-help{font-size:11px;color:#9698b3;padding:0 14px 8px;background:var(--panel)}
+@media(max-width:650px){
+ .sidebar{width:220px;position:absolute;z-index:5;top:0;bottom:0;left:0;box-shadow:8px 0 30px #0008}
+ .sidebar.closed{display:none}
+ header{padding:12px}
+ .brand{font-size:17px}
+ .header-actions button{padding:10px}
+ #chat{padding:12px}
+ .msg{max-width:94%}
+}
 </style>
 </head>
-
 <body>
 <div class="app">
-<header>
-  <div>
-    <div class="brand">🤖 Pk Gajni Bot</div>
-    <div class="sub">Tumhara AI dost • Live Search</div>
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-top">
+      <button id="newChat">＋ New chat</button>
+      <button id="closeSidebar" class="secondary" aria-label="Close chat list">✕</button>
+    </div>
+    <div id="chatList"></div>
+    <div class="sidebar-note">Chats are saved in this browser on this device. Clearing browser data may remove them.</div>
+  </aside>
+  <div class="main">
+    <header>
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <button id="menu" class="secondary" aria-label="Open chat list">☰</button>
+        <div>
+          <div class="brand">🤖 Pk Gajni Bot</div>
+          <div class="sub">Tumhara AI dost • Chat, Search & Voice</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="voiceToggle" class="secondary" title="Turn spoken replies on or off">🔊 Voice on</button>
+        <button id="settings" class="secondary">⚙ Settings</button>
+      </div>
+    </header>
+
+    <section id="setup" class="hidden">
+      <b>AI Settings</b>
+      <p class="small">Gemini API key is saved in this browser. Warning: a key used directly in a public website can be exposed. A server-side proxy is safer for a public app.</p>
+      <input id="apiKey" type="password" placeholder="Paste your Gemini API key" autocomplete="off">
+      <button id="saveKey">Save key</button>
+      <button id="removeKey" class="secondary">Remove key</button>
+      <button id="hideSettings" class="secondary">Close</button>
+    </section>
+
+    <main id="chat" aria-live="polite"></main>
+    <div id="status">Settings mein apni Gemini API key save karo.</div>
+    <div class="voice-help">🎙 Mic use karne ke liye browser permission allow karo. Voice recognition browser/device par depend karti hai.</div>
+    <form class="composer" id="form">
+      <button id="mic" type="button" class="secondary" title="Speak your message">🎙</button>
+      <input id="message" placeholder="Apna message likho..." autocomplete="off" required>
+      <button id="send" type="submit">Send ➤</button>
+    </form>
   </div>
-  <button id="settings">⚙ Settings</button>
-</header>
-
-<section id="setup" class="hidden">
-  <b>AI Settings</b>
-  <p class="small">
-    Google AI Studio se Gemini API key lo.
-    Ye key is browser mein save hogi. Public app ke liye
-    secure backend use karna chahiye.
-  </p>
-  <input id="apiKey" type="password" placeholder="Paste your Gemini API key">
-  <button id="saveKey">Save key</button>
-  <button id="hideSettings" style="background:#34364a">Close</button>
-</section>
-
-<main id="chat" aria-live="polite">
-  <div class="msg bot">
-    Assalam-o-Alaikum Boss! 😎 Main Pk Gajni Bot hoon.
-    Ab mujhse latest information, weather aur news bhi poochho!
-  </div>
-</main>
-
-<div id="status">Settings mein apni Gemini API key save karo.</div>
-
-<form class="composer" id="form">
-  <input id="message" placeholder="Apna message likho..." autocomplete="off" required>
-  <button id="send" type="submit">Send ➤</button>
-</form>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
-const chat = $("chat");
-let history = [];
+const chatEl = $("chat");
+const STORAGE_CHATS = "gajniChats";
+const STORAGE_CURRENT = "gajniCurrentChat";
+let chats = [];
+let currentId = null;
+let voiceReplies = true;
+let recognition = null;
+let isListening = false;
+let busy = false;
 
-try {
-  history = JSON.parse(localStorage.getItem("gajniHistory") || "[]");
-  if (!Array.isArray(history)) history = [];
-} catch {
-  history = [];
+function makeId(){ return "chat_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function titleFrom(messages){ 
+  const first = messages.find(m => m.who === "user" && typeof m.text === "string");
+  if(!first) return "New chat";
+  return first.text.replace(/\s+/g," ").slice(0,34) || "New chat";
 }
-
-function addMessage(text, who, save = true) {
-  const el = document.createElement("div");
-  el.className = "msg " + who;
-  el.textContent = text;
-  chat.appendChild(el);
-  chat.scrollTop = chat.scrollHeight;
-
-  if (save) {
-    history.push({ text, who });
-    history = history.slice(-60);
-    try {
-      localStorage.setItem("gajniHistory", JSON.stringify(history));
-    } catch {}
-  }
-  return el;
+function saveChats(){
+  try{
+    localStorage.setItem(STORAGE_CHATS, JSON.stringify(chats.slice(0,80)));
+    localStorage.setItem(STORAGE_CURRENT, currentId || "");
+  }catch(e){ $("status").textContent = "Browser storage full ho sakti hai; kuch purani chats delete karo."; }
 }
-
-for (const m of history) {
-  if (m && typeof m.text === "string" &&
-      (m.who === "user" || m.who === "bot")) {
-    addMessage(m.text, m.who, false);
+function loadChats(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_CHATS) || "null");
+    if(Array.isArray(saved)) chats = saved.filter(c => c && typeof c.id === "string" && Array.isArray(c.messages)).slice(0,80);
+  }catch{}
+  // Migrate existing single-chat history without deleting the old data.
+  if(!chats.length){
+    let old = [];
+    try{ old = JSON.parse(localStorage.getItem("gajniHistory") || "[]"); }catch{}
+    if(Array.isArray(old)){
+      old = old.filter(m => m && typeof m.text === "string" && (m.who === "user" || m.who === "bot")).slice(-60);
+    }else old = [];
+    chats = [{id:makeId(), title: titleFrom(old), messages:old, updated:Date.now()}];
   }
+  if(!chats.length) chats = [{id:makeId(),title:"New chat",messages:[],updated:Date.now()}];
+  currentId = localStorage.getItem(STORAGE_CURRENT);
+  if(!chats.some(c => c.id === currentId)) currentId = chats[0].id;
+  saveChats();
 }
-
-$("apiKey").value = localStorage.getItem("gajniApiKey") || "";
-
-$("settings").onclick = () =>
-  $("setup").classList.toggle("hidden");
-
-$("hideSettings").onclick = () =>
-  $("setup").classList.add("hidden");
-
-$("saveKey").onclick = () => {
-  const key = $("apiKey").value.trim();
-
-  if (!key) {
-    $("status").textContent = "Pehle API key paste karo.";
-    return;
-  }
-
-  localStorage.setItem("gajniApiKey", key);
-  $("setup").classList.add("hidden");
-  $("status").textContent = "API key save ho gayi.";
-};
-
-$("form").addEventListener("submit", async event => {
-  event.preventDefault();
-
-  const text = $("message").value.trim();
-  const key = localStorage.getItem("gajniApiKey");
-
-  if (!text) return;
-
-  if (!key) {
-    $("status").textContent = "Settings kholo aur API key save karo.";
-    $("setup").classList.remove("hidden");
-    return;
-  }
-
-  addMessage(text, "user");
-  $("message").value = "";
-  $("send").disabled = true;
-  $("status").textContent = "Gajni jawab dhoond raha hai... 🔎";
-
-  try {
-    const contents = history
-      .filter(m => m.who === "user" || m.who === "bot")
-      .slice(-16)
-      .map(m => ({
-        role: m.who === "user" ? "user" : "model",
-        parts: [{ text: m.text }]
-      }));
-
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": key
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{
-              text:
-                "You are Pk Gajni Bot, a friendly, funny and helpful AI assistant. " +
-                "Reply in the same language as the user, including Roman Urdu when appropriate. " +
-                "For current events, latest news, live weather, current prices, recent facts, " +
-                "or anything that may have changed, use Google Search grounding. " +
-                "Do not pretend to have searched if you did not. " +
-                "Clearly mention uncertainty when reliable current information is unavailable. " +
-                "Be respectful and clear."
-            }]
-          },
-          contents,
-          tools: [{ google_search: {} }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000
-          }
-        })
+function currentChat(){ return chats.find(c => c.id === currentId); }
+function renderMessages(){
+  chatEl.replaceChildren();
+  const c = currentChat();
+  if(!c || !c.messages.length){
+    const welcome = document.createElement("div");
+    welcome.className = "msg bot";
+    welcome.textContent = "Assalam-o-Alaikum Boss! 😎 Main Pk Gajni Bot hoon.\n\nMujhse sawal karo, mic se bolo, ya latest information ke liye poochho. Current web-search results tabhi aayenge jab API model/request search support kare.";
+    chatEl.appendChild(welcome);
+  }else{
+    for(const m of c.messages){
+      if(m && typeof m.text === "string" && (m.who === "user" || m.who === "bot")){
+        const el = document.createElement("div");
+        el.className = "msg " + m.who;
+        el.textContent = m.text;
+        chatEl.appendChild(el);
       }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const message = JSON.stringify(data.error || data);
-      const err = new Error(message);
-      err.status = response.status;
-      throw err;
     }
+  }
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+function renderChatList(){
+  const list = $("chatList");
+  list.replaceChildren();
+  [...chats].sort((a,b)=>(b.updated||0)-(a.updated||0)).forEach(c=>{
+    const row = document.createElement("div"); row.className = "chat-item";
+    const open = document.createElement("button"); open.className = "chat-open" + (c.id===currentId?" active":"");
+    open.textContent = c.title || "New chat"; open.title = open.textContent;
+    open.onclick = ()=>{ currentId=c.id; saveChats(); renderChatList(); renderMessages(); closeSidebarOnMobile(); };
+    const del = document.createElement("button"); del.className="chat-delete"; del.textContent="×"; del.title="Delete chat";
+    del.onclick = ()=>{
+      if(!confirm("Is chat ko delete karna hai?")) return;
+      chats = chats.filter(x=>x.id!==c.id);
+      if(!chats.length) chats.push({id:makeId(),title:"New chat",messages:[],updated:Date.now()});
+      if(currentId===c.id) currentId=chats[0].id;
+      saveChats(); renderChatList(); renderMessages();
+    };
+    row.append(open,del); list.appendChild(row);
+  });
+}
+function closeSidebarOnMobile(){
+  if(window.matchMedia("(max-width:650px)").matches) $("sidebar").classList.add("closed");
+}
+function addMessage(text, who){
+  const c=currentChat(); if(!c) return;
+  c.messages.push({text,who});
+  c.messages=c.messages.slice(-60);
+  c.title=titleFrom(c.messages); c.updated=Date.now();
+  saveChats(); renderMessages(); renderChatList();
+}
+function newChat(){
+  stopSpeaking();
+  const c={id:makeId(),title:"New chat",messages:[],updated:Date.now()};
+  chats.unshift(c); chats=chats.slice(0,80); currentId=c.id;
+  saveChats(); renderChatList(); renderMessages(); closeSidebarOnMobile();
+  $("message").focus();
+}
+function stopSpeaking(){ if("speechSynthesis" in window) window.speechSynthesis.cancel(); }
+function speak(text){
+  if(!voiceReplies || !("speechSynthesis" in window)) return;
+  stopSpeaking();
+  // Avoid speaking long appended source URLs; the response remains visible in chat.
+  const spoken = text.split("\n\n🌐 Web sources:")[0].slice(0,4500);
+  const utterance = new SpeechSynthesisUtterance(spoken);
+  utterance.lang = /[\u0600-\u06FF]/.test(spoken) ? "ur-PK" : "en-US";
+  utterance.rate = 1;
+  window.speechSynthesis.speak(utterance);
+}
+function setVoiceButton(){ $("voiceToggle").textContent = voiceReplies ? "🔊 Voice on" : "🔇 Voice off"; }
+$("newChat").onclick=newChat;
+$("menu").onclick=()=> $("sidebar").classList.toggle("closed");
+$("closeSidebar").onclick=()=> $("sidebar").classList.add("closed");
+$("settings").onclick=()=> $("setup").classList.toggle("hidden");
+$("hideSettings").onclick=()=> $("setup").classList.add("hidden");
+$("voiceToggle").onclick=()=>{ voiceReplies=!voiceReplies; if(!voiceReplies) stopSpeaking(); setVoiceButton(); };
+$("saveKey").onclick=()=>{
+  const key=$("apiKey").value.trim();
+  if(!key){$("status").textContent="Pehle API key paste karo.";return;}
+  localStorage.setItem("gajniApiKey",key);
+  $("setup").classList.add("hidden"); $("status").textContent="API key save ho gayi. Public app mein key expose ho sakti hai.";
+};
+$("removeKey").onclick=()=>{
+  localStorage.removeItem("gajniApiKey"); $("apiKey").value="";
+  $("status").textContent="Is browser se saved API key remove kar di gayi.";
+};
+$("apiKey").value=localStorage.getItem("gajniApiKey")||"";
 
-    const candidate = data.candidates?.[0];
-
-    const answer = candidate?.content?.parts
-      ?.map(p => p.text || "")
-      .join("")
-      .trim();
-
-    if (!answer) {
-      throw new Error("AI ne text jawab nahi diya. Dobara try karo.");
+function setupRecognition(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    $("mic").disabled=true;
+    $("mic").title="Is browser mein speech recognition supported nahi hai.";
+    return;
+  }
+  recognition=new SpeechRecognition();
+  recognition.continuous=false;
+  recognition.interimResults=true;
+  recognition.lang="ur-PK";
+  recognition.onstart=()=>{isListening=true;$("mic").classList.add("listening");$("mic").textContent="⏹";$("status").textContent="Boss, sun raha hoon... bolo!";};
+  recognition.onresult=(event)=>{
+    let finalText="", interim="";
+    for(let i=event.resultIndex;i<event.results.length;i++){
+      if(event.results[i].isFinal) finalText+=event.results[i][0].transcript;
+      else interim+=event.results[i][0].transcript;
     }
+    if(finalText) $("message").value=( $("message").value ? $("message").value+" " : "")+finalText;
+    if(interim) $("status").textContent="Sun raha hoon: "+interim;
+  };
+  recognition.onerror=(event)=>{$("status").textContent="Mic masla: "+event.error+". Browser permission aur mic check karo.";};
+  recognition.onend=()=>{isListening=false;$("mic").classList.remove("listening");$("mic").textContent="🎙";if($("status").textContent==="Boss, sun raha hoon... bolo!") $("status").textContent="Mic band. Message bhejne ke liye Send dabao.";};
+}
+$("mic").onclick=()=>{
+  if(!recognition){$("status").textContent="Is browser mein voice input available nahi. Chrome mein site permission allow karke try karo.";return;}
+  if(isListening){recognition.stop();return;}
+  try{recognition.lang="ur-PK";recognition.start();}catch(e){$("status").textContent="Mic dobara start karne se pehle ek lamha ruk jao.";}
+};
+setupRecognition(); setVoiceButton(); loadChats(); renderChatList(); renderMessages();
 
-    const chunks = candidate?.groundingMetadata?.groundingChunks || [];
-
-    const sources = chunks
-      .filter(item => item.web?.uri)
-      .map(item => ({
-        title: item.web.title || "Web source",
-        uri: item.web.uri
-      }));
-
-    const uniqueSources = [
-      ...new Map(sources.map(s => [s.uri, s])).values()
-    ];
-
-    const finalAnswer = answer + (
-      uniqueSources.length
-        ? "\n\n🌐 Web sources:\n" +
-          uniqueSources.map(s => `• ${s.title}: ${s.uri}`).join("\n")
-        : ""
-    );
-
-    addMessage(finalAnswer, "bot");
-    $("status").textContent = uniqueSources.length
-      ? "Online • Web sources included"
-      : "Online • Pk Gajni Bot";
-
-  } catch (error) {
+$("form").addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(busy) return;
+  const text=$("message").value.trim();
+  const key=localStorage.getItem("gajniApiKey");
+  if(!text) return;
+  if(!key){$("status").textContent="Settings kholo aur Gemini API key save karo.";$("setup").classList.remove("hidden");return;}
+  if(isListening) recognition.stop();
+  stopSpeaking();
+  addMessage(text,"user"); $("message").value="";
+  busy=true;$("send").disabled=true;$("status").textContent="Gajni jawab dhoond raha hai... 🔎";
+  try{
+    const c=currentChat();
+    const contents=c.messages.filter(m=>m.who==="user"||m.who==="bot").slice(-16).map(m=>({
+      role:m.who==="user"?"user":"model",
+      parts:[{text:m.text}]
+    }));
+    const response=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-goog-api-key":key},
+      body:JSON.stringify({
+        systemInstruction:{parts:[{text:
+          "You are Pk Gajni Bot, a friendly, funny and helpful AI assistant. "+
+          "Call the user Boss when natural. Reply in the same language as the user, including Roman Urdu when appropriate. "+
+          "For current events, latest news, live weather, current prices, recent facts, or anything that may have changed, use Google Search grounding when available. "+
+          "Do not pretend to have searched if you did not. Clearly mention uncertainty when reliable current information is unavailable. Be respectful and clear."
+        }]},
+        contents,
+        tools:[{google_search:{}}],
+        generationConfig:{temperature:0.7,maxOutputTokens:1000}
+      })
+    });
+    const data=await response.json();
+    if(!response.ok){
+      const message=JSON.stringify(data.error||data);
+      const err=new Error(message);err.status=response.status;throw err;
+    }
+    const candidate=data.candidates?.[0];
+    const answer=candidate?.content?.parts?.map(p=>p.text||"").join("").trim();
+    if(!answer) throw new Error("AI ne text jawab nahi diya. Dobara try karo.");
+    const chunks=candidate?.groundingMetadata?.groundingChunks||[];
+    const sources=chunks.filter(item=>item.web?.uri).map(item=>({title:item.web.title||"Web source",uri:item.web.uri}));
+    const uniqueSources=[...new Map(sources.map(s=>[s.uri,s])).values()];
+    const finalAnswer=answer+(uniqueSources.length?"\n\n🌐 Web sources:\n"+uniqueSources.map(s=>`• ${s.title}: ${s.uri}`).join("\n"):"");
+    addMessage(finalAnswer,"bot");
+    $("status").textContent=uniqueSources.length?"Online • Web sources included":"Online • Pk Gajni Bot";
+    speak(finalAnswer);
+  }catch(error){
     console.error(error);
-
-    if (error.status === 429) {
-      $("status").textContent =
-        "Quota limit ya billing restriction. Google AI Studio mein model aur quota check karo.";
-    } else if (error.status === 400 || error.status === 404) {
-      $("status").textContent =
-       "HTTP " + error.status + ": " + error.message;
-    } else {
-      $("status").textContent = "Masla: " + error.message;
-    }
-  } finally {
-    $("send").disabled = false;
-    $("message").focus();
+    if(error.status===429) $("status").textContent="HTTP 429: Quota limit ya billing restriction. Google AI Studio mein exact error/quota check karo.";
+    else if(error.status===400||error.status===403||error.status===404) $("status").textContent="HTTP "+error.status+": "+error.message;
+    else $("status").textContent="Masla: "+error.message;
+  }finally{
+    busy=false;$("send").disabled=false;$("message").focus();
   }
 });
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
-  });
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 }
 </script>
 </body>
