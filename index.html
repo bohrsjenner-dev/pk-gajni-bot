@@ -240,7 +240,7 @@ $("form").addEventListener("submit", async event => {
         "Quota limit ya billing restriction. Google AI Studio mein model aur quota check karo.";
     } else if (error.status === 400 || error.status === 404) {
       $("status").textContent =
-        "Model ya request error. API key aur model access check karo.";
+       "HTTP " + error.status + ": " + error.message;
     } else {
       $("status").textContent = "Masla: " + error.message;
     }
